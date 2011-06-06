@@ -31,9 +31,11 @@ class SqlLogComponent extends Object {
         $logs = $Xml->toArray();
         $logs = Set::classicExtract($logs, 'Table.Tbody.Tr.{n}.Td.1');
         
-        foreach ($logs as $log) {
-          $this->log($log);
-        }
+		if(is_array($logs)) {
+			foreach ($logs as $log) {
+			  $this->log($log);
+			}
+		}
       }
     }
   }
