@@ -15,29 +15,26 @@
 App::import('Core', 'Xml');
 
 class SqlLogComponent extends Object {
-  function beforeRender(&$controller) {
-    $queryLogs = array();
-    if (!class_exists('ConnectionManager')) {
-      return array();
-    }
-    $dbConfigs = ConnectionManager::sourceList();
-    foreach ($dbConfigs as $configName) {
-      $db =& ConnectionManager::getDataSource($configName);
-      if ($db->isInterfaceSupported('showLog')) {
-        ob_start();
-        $db->showLog();
-        $logs =  ob_get_clean();
-        $Xml = new Xml($logs);
-        $logs = $Xml->toArray();
-        $logs = Set::classicExtract($logs, 'Table.Tbody.Tr.{n}.Td.1');
-        
-		if(is_array($logs)) {
-			foreach ($logs as $log) {
-			  $this->log($log);
+	function beforeRender(&$controller) {
+		$queryLogs = array();
+		if (!class_exists('ConnectionManager') || (Configure::read('debug') < 2)) {
+			return array();
+		}
+		$dbConfigs = ConnectionManager::sourceList();
+		foreach ($dbConfigs as $configName) {
+			$db =& ConnectionManager::getDataSource($configName);
+			if ($db->isInterfaceSupported('showLog')) {
+				ob_start();
+				$db->showLog();
+				$logs =  ob_get_clean();
+				$Xml = new Xml($logs);
+				$logs = $Xml->toArray();
+				$logs = Set::classicExtract($logs, 'Table.Tbody.Tr.{n}.Td.1');
+				foreach ($logs as $log) {
+					$this->log($log, 'debug');
+				}
 			}
 		}
-      }
-    }
-  }
+	}
 }
 ?>
