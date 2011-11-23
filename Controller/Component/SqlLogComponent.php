@@ -11,30 +11,70 @@
  * @license     MIT
  *
  */
-
-App::import('Core', 'Xml');
-
+App::uses('ConnectionManager', 'Model');
 class SqlLogComponent extends Component {
-	function beforeRender(&$controller) {
-		$queryLogs = array();
-		if (!class_exists('ConnectionManager') || (Configure::read('debug') < 2)) {
-			return array();
+
+/**
+ * Status whether component is enable or disable
+ *
+ * @var boolean
+ **/
+	public $_debugWas = 0;
+
+/**
+ * Status whether component is enable or disable
+ *
+ * @var boolean
+ **/
+	public $enabled = false;
+
+/**
+ * Status whether component is enable or disable
+ *
+ * @var boolean
+ **/
+	private $_toFile = 'sql_log';
+
+/**
+ * Initialize callback.
+ * If automatically disabled, tell component collection about the state.
+ *
+ * @return bool
+ **/
+	public function initialize($controller) {
+		if ($recordTo = Configure::read('SqlLog.record')) {
+			$this->_debugWas = Configure::read('debug');
+			Configure::write('debug', 2);
+			$this->enabled = true;
+			
+			if($recordTo !== true) {
+				$this->_toFile = $recordTo.'.sql';
+			}
 		}
-		$dbConfigs = ConnectionManager::sourceList();
-		foreach ($dbConfigs as $configName) {
-			$db =& ConnectionManager::getDataSource($configName);
-			if ($db->isInterfaceSupported('showLog')) {
-				ob_start();
-				$db->showLog();
-				$logs =  ob_get_clean();
-				$Xml = new Xml($logs);
-				$logs = $Xml->toArray();
-				$logs = Set::classicExtract($logs, 'Table.Tbody.Tr.{n}.Td.1');
-				foreach ($logs as $log) {
-					$this->log($log, 'debug');
+	}
+	
+	function beforeRender(Controller $controller) {
+		if (!class_exists('ConnectionManager') || !$this->enabled) {
+			return false;
+		}
+		$noLogs = !isset($logs);
+		if ($noLogs) { 
+			$sources = ConnectionManager::sourceList();
+		
+			$logs = array();
+			foreach ($sources as $source) {
+				$db = ConnectionManager::getDataSource($source);
+				if (!method_exists($db, 'getLog')) {
+					continue;
+				}
+				$logs[$source] = $db->getLog();
+				foreach ($logs[$source] as $log) {
+					$this->log($log[0], $this->_toFile);
 				}
 			}
 		}
+		
+		Configure::write('debug', $this->_debugWas);
 	}
 }
 ?>
