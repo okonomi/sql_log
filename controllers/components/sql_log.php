@@ -14,7 +14,7 @@
 
 App::import('Core', 'Xml');
 
-class SqlLogComponent extends Object {
+class SqlLogComponent extends Component {
 	function beforeRender(&$controller) {
 		$queryLogs = array();
 		if (!class_exists('ConnectionManager') || (Configure::read('debug') < 2)) {
